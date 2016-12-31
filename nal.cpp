@@ -9,7 +9,7 @@ int findNalUnit(unsigned char *pBitstreamBuf,unsigned char *pNalBuf,int szNalBuf
 	// todo: erro check.
 	/*
 	while( next_bits( 24 ) != 0x000001 && next_bits( 32 ) != 0x00000001 )
-	leading_zero_8bits //等于 0x00 
+	leading_zero_8bits //碌脠脫脷 0x00 
 	*/
 	while(flag)
 	{
@@ -33,7 +33,7 @@ zero_byte /* equal to 0x00
 	}
 
 	/*
-	start_code_prefix_one_3bytes /* 等于 0x000001 
+	start_code_prefix_one_3bytes /* 碌脠脫脷 0x000001 
 	*/
 	if(pBit[0]!=0 || pBit[1]!=0|| pBit[2]!=1)
 	{
