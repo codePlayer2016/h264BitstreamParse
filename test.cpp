@@ -9,13 +9,20 @@ unsigned char nalBuf[1024*1024];
 int main()
 {
   int retVal=0;
+  
+  // this is the correct the error place.	
+  unsigned char *pBitSource=bitBuf;
+  unsigned char *pNalBuf=nalBuf;
   int bitSize=0;
   int nalsize=0;
 
-  int freadsize=0;
 
-  unsigned char *pNalBuf=nalBuf;
   int *szNalBuf=&nalsize;
+
+  int freadsize=0;
+  int index=0;
+
+  // read the bitstream.
   FILE *fp=fopen("Q:/test.h264","rb");
   if(fp==NULL)
   {
@@ -28,8 +35,7 @@ int main()
 	bitSize=ftell(fp);
 	fseek(fp,0L,SEEK_SET);
   }
-
-  freadsize=fread(bitBuf,1,bitSize,fp);
+  freadsize=fread(pBitSource,1,bitSize,fp);
   if(freadsize!=bitSize)
   {
 	retVal=-1;
@@ -37,7 +43,17 @@ int main()
   }
   else
   {}
-  findNalUnit(bitBuf,pNalBuf,szNalBuf);
+ 
+   while( findNalUnit((unsigned char **)&pBitSource,pNalBuf,szNalBuf,bitSize)==1)
+   {
+	 //printf("szNalBuf=%d\n",*szNalBuf);
+	 for(index=0;index<(*szNalBuf);index++)
+	 {
+		printf("%02x ",pNalBuf[index]);
+	 }
+	 printf("\nszNalBuf=%d\n",(*szNalBuf));
+
+   }
 
 
   // LeadingZero8BitsCount + startCode + nalu data + TrailingZero8Bits
