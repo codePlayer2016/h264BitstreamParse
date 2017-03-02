@@ -3,16 +3,26 @@
 #include <stdlib.h>
 #include <string.h>
 
-int findNalUnit(unsigned char **pBitstreamBuf,unsigned char *pNalBuf,int *szNalBuf,int bitSize)
+#include "nal.h"
+/**
+@b get the nal in the stream.
+@p[in/out] pBitstreamBuf input stream.
+@p[out] pNal Nal unite. 
+@p[in/out] pBitSize the bit stream length.
+*/
+
+int findNalUnit(unsigned char **pBitstreamBuf,Nal_t *pNal,int *pBitSize)
 {
 	int retVal=0;
-	int flag=1;
+
 	int processedSize=0;
 	//
 	unsigned char *pBit=(unsigned char *)*pBitstreamBuf;
 	unsigned char *pNalStart=NULL;
-	unsigned char *pNalBufOut=pNalBuf;
-	*szNalBuf=0;
+	unsigned char *pNalBufOut=pNal->pBuffer;
+	int nalLen=0;
+	int bitSize=*pBitSize;
+	//*szNalBuf=0;
 
 	// todo: erro check.
 	/*
@@ -20,7 +30,7 @@ int findNalUnit(unsigned char **pBitstreamBuf,unsigned char *pNalBuf,int *szNalB
 	leading_zero_8bits //等于 0x00 
 	*/
 
-	while(flag)
+	while(1)
 	{
 		if((pBit[0]!=0 || pBit[1]!=0|| pBit[2]!=1) && (pBit[0]!=0 || pBit[1]!=0|| pBit[2]!=0 || pBit[3]!=1))
 		{
@@ -34,7 +44,7 @@ int findNalUnit(unsigned char **pBitstreamBuf,unsigned char *pNalBuf,int *szNalB
 		}
 		else
 		{
-			flag=0;
+			break;
 		}
 
 	}
@@ -47,6 +57,12 @@ int findNalUnit(unsigned char **pBitstreamBuf,unsigned char *pNalBuf,int *szNalB
 		pBit++;
 		processedSize++;
 	}
+	else
+	{
+		pNal->prefixCodeLen=3;
+		pBit+=3;
+		processedSize+=3;
+	}
 
 	/*
 	start_code_prefix_one_3bytes /* 等于 0x000001 
@@ -58,8 +74,9 @@ int findNalUnit(unsigned char **pBitstreamBuf,unsigned char *pNalBuf,int *szNalB
 	}
 	else
 	{
+		pNal->prefixCodeLen=4;
 		pBit+=3;
-		processedSize++;
+		processedSize+=3;
 	}
 	// nal_unit( NumBytesInNALunit )
 
@@ -73,7 +90,7 @@ int findNalUnit(unsigned char **pBitstreamBuf,unsigned char *pNalBuf,int *szNalB
 
 		pBit++;
 		processedSize++;
-		(*szNalBuf)++;
+		nalLen++;
 
 		if(processedSize+4>bitSize)
 		{
@@ -82,12 +99,76 @@ int findNalUnit(unsigned char **pBitstreamBuf,unsigned char *pNalBuf,int *szNalB
 		}
 		//printf("pNal=%d\n",pBit[0]);
 	}
-	memcpy(pNalBufOut,pNalStart,*szNalBuf);
+
+	pNal->length=nalLen;
+	memcpy(pNalBufOut,pNalStart,nalLen);
 	retVal=1;
 
 	//printf("szNalBuf=%d\n",*szNalBuf);
 	//printf("%d,%d,%d,%d",pNalBuf[0],pNalBuf[1],pNalBuf[2],pNalBuf[3]);
 
 	*pBitstreamBuf=pBit;
+	*pBitSize=bitSize-processedSize;
+	return (retVal);
+}
+
+/**
+@function parse the nal
+@input
+@output
+*/
+
+int parseNalUnite(Nal_t *pNal)
+{
+	int retVal=0;
+
+	unsigned char *pSrc=pNal->pBuffer;
+
+
+	//memcpy(&nalHead,pSrc,1);
+	pNal->forbiddenBit=(pSrc[0]&0x80)>>7;
+	pNal->nalRefIdc=(pSrc[0]&0x60)>>5;
+	pNal->nalType=(pSrc[0]&0x1f);
+	pNal->pEbsp=pNal->pBuffer+1;
+	pNal->ebspLen=pNal->length-1;
+
+	printf("forbidden1Bit=%2x,nalRefIdc=%2x,nalType=%2x\n",pNal->forbiddenBit,pNal->nalRefIdc,pNal->nalType);
+	
+	return (retVal);
+}
+
+int ebspToRbsp(Nal_t *pNal)
+{
+	int retVal=0;
+	
+	unsigned char *pData=pNal->pBuffer;
+	pNal->pRbsp=(unsigned char *)malloc(pNal->length);
+
+	int i=0;
+	int j=0;
+	for(i=0;i<pNal->ebspLen-2;i++)
+	{
+		
+		if((pData[i]==0x0)&&(pData[i+1]==0x0)&&(pData[i+2]==0x03))
+		{
+			pNal->pRbsp[j]=pData[i];
+			pNal->pRbsp[j+1]=pData[i+1];
+			pNal->pRbsp[j+2]=pData[i+3];
+			j+=3;
+			i+=3;
+		}
+		else
+		{
+			pNal->pRbsp[j]=pData[i];
+			j++;
+		}
+	}
+
+	while(pNal->pRbsp[j-1]==0)
+	{
+		j--;
+	}
+	pNal->rbspLen=j;
+
 	return (retVal);
 }

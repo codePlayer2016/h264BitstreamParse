@@ -12,9 +12,12 @@ int main()
   
   // this is the correct the error place.	
   unsigned char *pBitSource=bitBuf;
-  unsigned char *pNalBuf=nalBuf;
+  //unsigned char *pNalBuf=nalBuf;
   int bitSize=0;
   int nalsize=0;
+
+  Nal_t nalData;
+  nalData.pBuffer=nalBuf;
 
 
   int *szNalBuf=&nalsize;
@@ -44,14 +47,19 @@ int main()
   else
   {}
  
-   while( findNalUnit((unsigned char **)&pBitSource,pNalBuf,szNalBuf,bitSize)==1)
+   while( findNalUnit((unsigned char **)&pBitSource,&nalData,&bitSize)==1)
    {
+   #if 0
 	 //printf("szNalBuf=%d\n",*szNalBuf);
 	 for(index=0;index<(*szNalBuf);index++)
 	 {
 		printf("%02x ",pNalBuf[index]);
 	 }
-	 printf("\nszNalBuf=%d\n",(*szNalBuf));
+	 printf("\nszNalBuf=%d\n",nalData.length);
+#endif
+	 parseNalUnite(&nalData);
+
+	 ebspToRbsp(&nalData);
 
    }
 
