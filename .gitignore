@@ -6,13 +6,7 @@
 *.log
 *.idb
 *.exe
-*.filters
-*.suo
 *.lastbuildstate
 *.opensdf
-*.vcxproj
-*.vcxproj
-h264BitstreamParse/h264BitstreamParse.vcxproj
-*.vcxproj
-h264BitstreamParse
-*.vcxproj
+/h264BitstreamParse/Debug
+
